@@ -96,6 +96,22 @@ Note-off and note-on with velocity 0 are ignored. Notes outside 16–23 are igno
 - Each hit sends `/drum/<name> <velocity 0–1>` to `max/shoal_drums.maxpat` and starts a short reaction on screen. The reactions are display only: they never move the fish, so the descriptors are not affected.
 - A **BANK B** label (top right) shows while the last pad you hit was in bank B. The MPK sends nothing when you switch banks, so the label follows your last hit.
 - Bank A, the knobs, the joystick and the keys work as before.
+- **Groove energy:** the hits are also counted over 2 s (16 hits = 1.0) and sent as `/drum/energy` 0–1. It rises in about 0.25 s and, 0.75 s after the last hit, relaxes to exactly 0 (about 2.7 s in all). It is sent only once bank B has been used. The constants are `DRUM_ENERGY_*` in `config.py`.
+- **drums>latent** (a toggle in the Drums copy of the PLAUD device, off at load): with it on, each drum also moves PLAUD for a moment, and the panel next to it sets how much. Each move glides back exactly to your own setting.
+
+| Panel control | Range | Default | What it does |
+|---|---|---|---|
+| amount | 0–1 | 0.5 | size of the posterior hits: kick ch1, snare ch2, hats ch3, clap/perc ch4 |
+| decay | 200–2000 ms | 400 ms | glide time back to your setting; hats use 0.375 × |
+| grit | 0–0.6 | 0.08 | Shape push of the dirty pad |
+| bend | 0–0.5 | 0.25 | Stretch push of the dirty pad (Limit gets 0.8 ×) |
+| push | 0–0.3 | 0.1 | prior territory push: kick down, snare right |
+| reseed | on/off | on | the slice pad reseeds the prior (a fresh phrase) |
+| E>tmp | 0–1 | 0.2 | groove energy raises the prior temperature by up to this |
+| E>bend | 0–0.3 | 0.15 | groove energy raises Stretch (Limit 0.8 ×) by up to this |
+| kick, snare, hats, clap/perc, dirty, slice | on/off | on | the latent hits of each pad group |
+
+The details are in [MAX_PATCH_CHANGES.md](MAX_PATCH_CHANGES.md).
 
 ## AKAI MIDIMIX
 

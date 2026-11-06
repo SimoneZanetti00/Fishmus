@@ -85,9 +85,46 @@ automatically from the MIDI device name.
 - **Pads:** kick, scare, food, calm, and four slices of the grain source.
 - **Joystick:** steers a food point around the screen; at rest, no food.
 - **Keys:** transpose the grain source by −12…+12 semitones (latched until the next key).
-- **Pad bank B:** eight drums (kick, snare, hi-hat, dirty, slice, open hat, clap, perc), played by `max/shoal_drums.maxpat`, each with a short visual reaction on screen.
+- **Pad bank B:** eight drums, see [Drums (bank B)](#drums-bank-b) below.
 
 The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS.md](docs/CONTROLS.md).
+
+## Drums (bank B)
+
+On the `drums` branch, the MPK's pad **bank B** plays eight drums in `max/shoal_drums.maxpat`. Bank A, the knobs, the
+joystick and the keys keep working as before, and nothing changes while bank B is not used.
+
+| Pad | Drum | With drums>latent on, it also… |
+|---|---|---|
+| 1 | kick | pushes PLAUD's posterior ch1, and the prior territory down |
+| 2 | snare | pushes posterior ch2, and the prior territory right |
+| 3 | hi-hat | pushes posterior ch3 (short) |
+| 4 | dirty | bends Stretch and Limit (*bend*) and Shape (*grit*) |
+| 5 | slice (a burst of the grain source) | reseeds the prior: a fresh phrase |
+| 6 | open hat | pushes posterior ch3 (short) |
+| 7 | clap | pushes posterior ch4 |
+| 8 | perc | pushes posterior ch4 |
+
+- **On screen:** each hit draws a short reaction. It is display only, so the fish and the sound descriptors are not affected.
+- **Groove energy:** Python also sends how densely you play (`/drum/energy`, 0–1, smoothed). While you play, it gently raises Stretch/Limit and the prior temperature; about 2.7 s after you stop it is back to 0.
+
+**drums>latent** is a toggle in the Drums copy of the PLAUD device, always off at load. With it off, the drums only make sound.
+
+With it on, every hit adds a short offset on top of your own setting and glides back to it exactly. A hit never writes a dial, so rapid hits cannot "stick".
+
+The **drums** panel next to the toggle sets:
+- *amount* (posterior hits), *decay* (0.2–2 s), *grit* (Shape), *bend* (Stretch/Limit);
+- *push* (prior territory), *reseed* (on slice), *E>tmp* and *E>bend* (groove energy);
+- one on/off per pad group.
+
+The device changes are listed in [docs/MAX_PATCH_CHANGES.md](docs/MAX_PATCH_CHANGES.md), since the device is not in this repository.
+
+**Start the drums version:**
+1. `git switch drums`, then `.venv\Scripts\activate` and `python src/main.py`.
+2. In Max, open `PLAUD_Simo_DEV2-2.amxd.maxpat`, `shoal_fx.maxpat`, `shoal_gran.maxpat` and `shoal_drums.maxpat` from the Drums working copy (`PLAUD_Drums_work\patchers\`), then turn DSP on.
+3. Switch the MPK to pad bank B, and turn on drums>latent if you want the drums to move PLAUD.
+
+Drum samples live in `drums\` next to that `patchers\` folder, outside the repository; see [docs/MAX_SETUP.md](docs/MAX_SETUP.md#the-drums-set).
 
 ## Documentation
 
@@ -96,7 +133,8 @@ The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | modules, the frame loop, the boid forces, what each descriptor measures, how it reaches the sound |
 | [docs/OSC.md](docs/OSC.md) | every OSC address with its range, plus the control input on UDP 7500 |
 | [docs/CONTROLS.md](docs/CONTROLS.md) | keyboard, mouse, command line, MPK mini 3, MIDIMIX, troubleshooting |
-| [docs/MAX_SETUP.md](docs/MAX_SETUP.md) | the PLAUD device routes, the prior~ edits, the `shoal_fx` and `shoal_gran` patches |
+| [docs/MAX_SETUP.md](docs/MAX_SETUP.md) | the PLAUD device routes, the prior~ edits, the `shoal_fx`, `shoal_gran` and `shoal_drums` patches, the Drums set |
+| [docs/MAX_PATCH_CHANGES.md](docs/MAX_PATCH_CHANGES.md) | every change made to the PLAUD device and prior~ in the Drums working copy (drum route, drums>latent, load defaults) |
 | [docs/IDEAS.md](docs/IDEAS.md) | known limitations and future work |
 
 ## Repository layout

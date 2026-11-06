@@ -29,6 +29,7 @@ SynthFish has two halves that talk over OSC on the local machine. The Python hal
 | `aquarium_boids/osc_io.py` | Every outgoing OSC message, plus the FUDI copy |
 | `aquarium_boids/midi_in.py` | MIDI input: device choice, controller profiles, knobs and pads |
 | `aquarium_boids/control_in.py` | Plain-text control input on UDP 7500 |
+| `aquarium_boids/groove.py` | Groove energy: how densely the bank-B drums are played, as one smoothed 0–1 value (`/drum/energy`) |
 | `aquarium_boids/render.py` | Window, letterboxed view, the thermal and classic looks |
 | `aquarium_boids/markov.py` | Legacy symbolic note generator (`/music/*`) |
 | `tools/send_control_test.py` | Sends a sequence of test controls to UDP 7500 |
@@ -97,7 +98,7 @@ Computed every frame over the whole flock, then smoothed with a one-pole filter 
 | Grain voices | each fish's x | `/gran/fish_x` (first 32 fish; `shoal_gran.maxpat` uses 16), one voice per fish, panned by x |
 | Grain rate and jitter | `fish_count`, agitation, predator, disorder | `/gran/density = 100 × fish_count`; `/gran/noise = clip(1.2·energy + 0.7·predator/3 + 0.2·(1 − coherence))` |
 | Mix, pads, transpose | MPK mini 3 | `/mix/*` when a knob moves, `/pad/*` when a pad is hit, `/mix/transpose` when a key is pressed |
-| Drums | MPK pad bank B | `/drum/<name> <velocity>` → `shoal_drums.maxpat`; the fish are not affected |
+| Drums | MPK pad bank B | `/drum/<name> <velocity>` → `shoal_drums.maxpat`; the fish are not affected. `groove.py` turns the hit density into `/drum/energy`; in the Drums device, drums>latent turns hits and energy into short offsets on PLAUD (see [MAX_PATCH_CHANGES.md](MAX_PATCH_CHANGES.md)) |
 
 Design rule: the flock drives a few expressive parameters; everything else in PLAUD stays in the performer's hands.
 

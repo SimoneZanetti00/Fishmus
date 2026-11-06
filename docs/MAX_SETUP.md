@@ -32,7 +32,7 @@ In `prior~`, the device's prior subpatch, make three changes:
 
 ## 3. Open the SynthFish patches and add audio
 
-Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`. For the MPK pad bank B, also open `max/shoal_drums.maxpat`, and add a fifth route to the device: `route /drum/kick /drum/snare /drum/hihat /drum/dirty /drum/slice /drum/openhat /drum/clap /drum/perc` → `s drumKick`, `s drumSnare`, `s drumHihat`, `s drumDirty`, `s drumSlice`, `s drumOpenhat`, `s drumClap`, `s drumPerc`.
+Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`. For the MPK pad bank B, see [The Drums set](#the-drums-set) below.
 
 Put your own files next to the patches:
 
@@ -45,6 +45,35 @@ Put your own files next to the patches:
 | `drums/candidates/<pad>/*.wav` | `shoal_drums.maxpat` | optional: more samples per drum, picked from that voice's menu |
 
 Git ignores audio files, `max/grains/` and `drums/`, so your sounds never end up in the repository.
+
+## The Drums set
+
+The drums version (branch `drums`) runs on its own Max working copy, `C:\dev\max-work\PLAUD_Drums_work\`. It is a copy of `PLAUD_Simo_work`, which stays unchanged for SynthFish as before. Open these four patches from its `patchers\` folder, in one Max session, then turn DSP on:
+
+| Patch | Role |
+|---|---|
+| `PLAUD_Simo_DEV2-2.amxd.maxpat` | the PLAUD device, with the drum route and **drums>latent** + its panel; it loads `prior~.maxpat` from the same folder |
+| `shoal_fx.maxpat` | predator kick, spectral shake, reverb (as in `max/`) |
+| `shoal_gran.maxpat` | the granulator and slices (as in `max/`); the drums' slice voice also reads its buffer |
+| `shoal_drums.maxpat` | the eight drum voices (as in `max/`) |
+
+The device and `prior~` changes are not in this repository; they are listed step by step in [MAX_PATCH_CHANGES.md](MAX_PATCH_CHANGES.md). In short:
+- a fifth route `/drum/kick … /drum/perc /drum/energy` → `s drumKick` … `s drumPerc`, `s drumEnergy`;
+- the drums>latent toggle and the drums panel;
+- offsets on the prior's territory, temperature and reseed;
+- the load defaults.
+
+**Samples, outside the repository:**
+
+```
+PLAUD_Drums_work\
+  patchers\            the four patches (+ shoal_kick.wav, shoal_gran.aiff, grains\)
+  drums\
+    <pad>.wav          optional default sample per drum: kick, snare, hihat, dirty, openhat, clap, perc
+    candidates\<pad>\  more samples per drum, chosen from the voice's menu; SOURCES.txt lists where each came from
+```
+
+`shoal_drums.maxpat` finds `drums\` as the folder next to its own folder, at run time, so nothing absolute is saved. A pad without `drums\<pad>.wav` plays its synthesized fallback until you pick a sample from its menu. The candidate samples are copies from third-party drum kits for private use: keep them out of any repository (git already ignores `drums/` and audio files).
 
 ## shoal_fx.maxpat: predator kick, spectral shake and reverb
 

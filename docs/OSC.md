@@ -64,6 +64,9 @@ All values are floats unless noted.
 | Address | Range | Source | Meaning |
 |---|---|---|---|
 | `/drum/kick`, `/drum/snare`, `/drum/hihat`, `/drum/dirty`, `/drum/slice`, `/drum/openhat`, `/drum/clap`, `/drum/perc` | 0–1 | MPK pad bank B, pads 1–8 | one hit, with the pad velocity (velocity / 127) |
+| `/drum/energy` | 0–1 | bank-B hits | groove energy: hits over the last 2 s (16 = 1.0), smoothed. Sent at the descriptor rate only once bank B has been used, while it is above 0, then one final 0. Back to 0 about 2.7 s after the last hit |
+
+In the Drums set, the device routes all nine to `s drumKick` … `s drumPerc` and `s drumEnergy` (see [MAX_PATCH_CHANGES.md](MAX_PATCH_CHANGES.md)).
 
 ## Legacy streams (still sent, not used by SynthFish)
 
