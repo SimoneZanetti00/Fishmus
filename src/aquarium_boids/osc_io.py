@@ -172,6 +172,13 @@ class OscSender:
         """
         self.client.send_message(f"/drum/{name}", float(velocity))
 
+    def send_drum_energy(self, value: float) -> None:
+        """Groove energy from the bank-B drums, at the descriptor rate while it is non-zero (then one 0).
+
+          /drum/energy  float 0..1
+        """
+        self.client.send_message("/drum/energy", float(value))
+
     def send_pad_kick(self) -> None:
         """Pad 1: one kick now.  /pad/kick  (no arguments)"""
         self.client.send_message("/pad/kick", [])

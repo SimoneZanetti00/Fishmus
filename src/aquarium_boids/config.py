@@ -56,6 +56,12 @@ JOY_SMOOTHING = 0.15  # per-frame glide of the joystick food point towards its t
 MIDI_KEYS_MPK = (1, 48, 72, 60)  # channel, lowest, highest, root: note-on -> transpose = note - root
 # Pad bank B (note-on 32..39, any channel; measured: channel 10, velocity-sensitive) -> drum hits /drum/<name>.
 DRUM_PADS_MPK = {32: "kick", 33: "snare", 34: "hihat", 35: "dirty", 36: "slice", 37: "openhat", 38: "clap", 39: "perc"}
+# Groove energy (/drum/energy 0..1): bank-B hits over a sliding window, smoothed; sent only once bank B is used.
+DRUM_ENERGY_WINDOW_S = 2.0
+DRUM_ENERGY_FULL_HITS = 16  # hits in the window that give 1.0 (16th notes at 120 BPM)
+DRUM_ENERGY_ATTACK_S = 0.25
+DRUM_ENERGY_RELEASE_S = 0.5
+DRUM_ENERGY_IDLE_S = 0.75  # no hit for this long: the energy starts relaxing (back to 0 in ~2.7 s)
 MIDI_PROFILES = {  # name substring -> what the controller adds to (or replaces in) the default MIDIMIX setup
     "MPK": {
         "cc": MIDI_CC_MAPPING_MPK,

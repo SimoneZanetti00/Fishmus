@@ -15,6 +15,11 @@ from aquarium_boids.config import (
     BOID_COUNT,
     BPM,
     CONTROL_PORT,
+    DRUM_ENERGY_ATTACK_S,
+    DRUM_ENERGY_FULL_HITS,
+    DRUM_ENERGY_IDLE_S,
+    DRUM_ENERGY_RELEASE_S,
+    DRUM_ENERGY_WINDOW_S,
     ENABLE_MIDI_INPUT,
     FPS,
     GRAN_MAX_VOICES,
@@ -36,6 +41,7 @@ from aquarium_boids.config import (
 from aquarium_boids.control_in import ControlReceiver
 from aquarium_boids.controls import RuntimeControls, clamp01
 from aquarium_boids.descriptors import DESCRIPTOR_ORDER, OnePoleSmoother, compute_descriptors
+from aquarium_boids.groove import GrooveEnergy
 from aquarium_boids.markov import LAYERS, SECTIONS, SymbolicGenerator
 from aquarium_boids.midi_in import MidiControllerInput
 from aquarium_boids.osc_io import OscSender
@@ -212,6 +218,8 @@ def main(argv: list[str] | None = None) -> None:
     predator_active = False
     predator_burst_until = 0.0  # pad 2
     food_pad_on = False  # pad 3
+    groove = GrooveEnergy(DRUM_ENERGY_WINDOW_S, DRUM_ENERGY_FULL_HITS, DRUM_ENERGY_ATTACK_S, DRUM_ENERGY_RELEASE_S,
+                          DRUM_ENERGY_IDLE_S)
     joy_food: Vector2 | None = None  # MPK joystick food point (smoothed), None while the stick rests
     joy_food_since = 0.0
     mouse_food_since = 0.0
@@ -249,6 +257,8 @@ def main(argv: list[str] | None = None) -> None:
         for name, velocity in midi_input.take_drums():  # MPK pad bank B: drum hits for Max, display-only visuals
             osc.send_drum(name, velocity)
             renderer.drum_hit(name, velocity, flock)
+            groove.hit(now)
+        groove.update(now, dt / FPS)
         renderer.drums.bank_b = midi_input.last_bank == "B"
 
         transpose = midi_input.take_transpose()  # MPK keys: latched transpose for the grain source
@@ -325,6 +335,9 @@ def main(argv: list[str] | None = None) -> None:
             if predator_active:
                 osc.send_fx_predator_strength(controls)
             osc.send_fish_x(flock, WIDTH, GRAN_MAX_VOICES)
+            energy = groove.to_send()  # None until bank B is used
+            if energy is not None:
+                osc.send_drum_energy(energy)
             last_descriptor_send = now
 
         # Clean terminal readout: granular controls + PLAUD latent point (~2x/sec).
