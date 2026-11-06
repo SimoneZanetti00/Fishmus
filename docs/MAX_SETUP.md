@@ -32,7 +32,7 @@ In `prior~`, the device's prior subpatch, make three changes:
 
 ## 3. Open the SynthFish patches and add audio
 
-Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`.
+Open `max/shoal_fx.maxpat` and `max/shoal_gran.maxpat` in the same Max session as the device, then turn DSP on. Both open in presentation view. Both have their own `dac~ 1 2`. For the MPK pad bank B, also open `max/shoal_drums.maxpat`, and add a fifth route to the device: `route /drum/kick /drum/snare /drum/hihat /drum/dirty /drum/slice /drum/openhat /drum/clap /drum/perc` → `s drumKick`, `s drumSnare`, `s drumHihat`, `s drumDirty`, `s drumSlice`, `s drumOpenhat`, `s drumClap`, `s drumPerc`.
 
 Put your own files next to the patches:
 
@@ -41,8 +41,10 @@ Put your own files next to the patches:
 | `max/shoal_kick.wav` | `shoal_fx.maxpat` | any short kick; loaded 2 s after the patch opens |
 | `max/shoal_gran.aiff` | `shoal_gran.maxpat` | the default grain source, loaded at start |
 | `max/grains/*.wav`, `*.aif`, `*.aiff` | `shoal_gran.maxpat` | optional: more sources, picked from the menu ("rescan" refreshes the list) |
+| `drums/<pad>.wav` (in the folder **above** `max/`) | `shoal_drums.maxpat` | optional: the default sample of each drum (`kick`, `snare`, `hihat`, `dirty`, `openhat`, `clap`, `perc`); without it the voice is synthesized |
+| `drums/candidates/<pad>/*.wav` | `shoal_drums.maxpat` | optional: more samples per drum, picked from that voice's menu |
 
-Git ignores audio files and `max/grains/`, so your sounds never end up in the repository.
+Git ignores audio files, `max/grains/` and `drums/`, so your sounds never end up in the repository.
 
 ## shoal_fx.maxpat: predator kick, spectral shake and reverb
 
@@ -104,6 +106,21 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 | region width | 118 s | — |
 | tone (low-pass) | 2584 Hz | — |
 
+## shoal_drums.maxpat: drum voices for the MPK pad bank B
+
+- **Inputs:** `r drumKick` … `r drumPerc`, each the hit velocity 0–1.
+- **Level:** velocity² × the voice gain (0.8 at load), then master (0.8) and on/off, into its own `dac~ 1 2`.
+- **Samples:** at load each voice tries `drums/<pad>.wav` from the folder above the patch. The path is worked out at run time, so nothing absolute is saved; in the Max working copy that is `PLAUD_Drums_work\drums\`. When the file loads, the status shows *sample*; a mono file plays on both sides. Otherwise the status shows *synth* and the voice plays its fallback:
+  - kick: sine sweep 150 → 45 Hz;
+  - snare: band-passed noise + 185 Hz tone;
+  - hi-hat / open hat: high-passed noise, 45 ms / 420 ms;
+  - clap: three band-passed noise bursts;
+  - dirty: noise and a 90 Hz buzz, bit-crushed;
+  - perc: a short tuned blip.
+- **Sample menu (each voice but slice):** *default* (`drums/<pad>.wav`), *synth*, or any file in `drums/candidates/<pad>/`. A choice loads at once. It switches the voice to synth first, and back to sample only when the file has loaded, so a missing file never leaves an old sample playing.
+- **Slice:** no file. A 300 ms burst from a random position of the grain source (`buffer~ shoal_gran`), so `shoal_gran.maxpat` must be open.
+- **Controls:** on/off, master gain, and per voice a test button, gain, status and sample menu.
+
 ## Console messages
 
 | Message | Meaning |
@@ -118,6 +135,7 @@ Git ignores audio files and `max/grains/`, so your sounds never end up in the re
 | `shoal_fx: ERROR kick sample shoal_kick.wav NOT FOUND …` | no kick file next to the patch (after 2 s); the synth kick still works |
 | `shoal_fx_strength_in …` | raw `/fx/predator_strength` values as they arrive (diagnostic) |
 | `shoal_fx_timeout` | no predator message for 1 s while active; the state switched off |
+| `shoal_drums: <pad> sample loaded` | a drum sample is in memory (default or from the menu) |
 
 ## Audio troubleshooting
 

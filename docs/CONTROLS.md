@@ -80,6 +80,23 @@ Note-off and note-on with velocity 0 are ignored. Notes outside 16–23 are igno
 
 **Keys:** a key 48–72 on channel 1 sets the transpose of the grain source to note − 60 semitones (−12…+12) and sends `/mix/transpose`. It stays latched until the next key; releasing the key does nothing. Other notes on channel 1 are ignored.
 
+**Pad bank B (drums):** switch the MPK to pad bank B. The pads then send note-on 32–39 on channel 10, velocity-sensitive (pad 1 = 32 … pad 8 = 39).
+
+| Pad | Drum |
+|---|---|
+| 1 | kick |
+| 2 | snare |
+| 3 | hi-hat |
+| 4 | dirty |
+| 5 | slice (a burst of the grain source) |
+| 6 | open hat |
+| 7 | clap |
+| 8 | perc |
+
+- Each hit sends `/drum/<name> <velocity 0–1>` to `max/shoal_drums.maxpat` and starts a short reaction on screen. The reactions are display only: they never move the fish, so the descriptors are not affected.
+- A **BANK B** label (top right) shows while the last pad you hit was in bank B. The MPK sends nothing when you switch banks, so the label follows your last hit.
+- Bank A, the knobs, the joystick and the keys work as before.
+
 ## AKAI MIDIMIX
 
 The 8 faders control the ecosystem (`MIDI_CC_MAPPING` in `config.py`). Alignment stays at 1.0.
@@ -114,6 +131,7 @@ With `MIDI_DEBUG = True` (the default), every message is printed:
 - `[midi-map] cc=X -> parameter = value`: the mapped result;
 - `[pad] n  (program P, channel C)` or `[pad] n  (note N, channel C)`: a pad;
 - `[key] note N -> transpose +k`: a key;
+- `[drum] name v=…  (note N, channel C)`: a bank-B drum hit;
 - `[midi] note on/off …: ignored`: a note that is neither a pad nor a key.
 
 The joystick (CC 80 / 81) is not printed: it sends a continuous stream and would flood the terminal.

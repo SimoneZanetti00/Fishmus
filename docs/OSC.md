@@ -59,6 +59,12 @@ All values are floats unless noted.
 | `/pad/kick` | no arguments | MPK pad 1 | one kick now |
 | `/pad/sample` | int 1–4 | MPK pads 5–8 | play slice 1–4 of the grain source |
 
+### Drums (`/drum/*`): when a bank-B pad is hit
+
+| Address | Range | Source | Meaning |
+|---|---|---|---|
+| `/drum/kick`, `/drum/snare`, `/drum/hihat`, `/drum/dirty`, `/drum/slice`, `/drum/openhat`, `/drum/clap`, `/drum/perc` | 0–1 | MPK pad bank B, pads 1–8 | one hit, with the pad velocity (velocity / 127) |
+
 ## Legacy streams (still sent, not used by SynthFish)
 
 Kept so that nothing that listened to them before breaks.

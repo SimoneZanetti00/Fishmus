@@ -85,6 +85,7 @@ automatically from the MIDI device name.
 - **Pads:** kick, scare, food, calm, and four slices of the grain source.
 - **Joystick:** steers a food point around the screen; at rest, no food.
 - **Keys:** transpose the grain source by −12…+12 semitones (latched until the next key).
+- **Pad bank B:** eight drums (kick, snare, hi-hat, dirty, slice, open hat, clap, perc), played by `max/shoal_drums.maxpat`, each with a short visual reaction on screen.
 
 The full tables, and the alternative AKAI MIDIMIX mapping, are in [docs/CONTROLS.md](docs/CONTROLS.md).
 
@@ -109,6 +110,7 @@ src/
 max/
   shoal_fx.maxpat    predator kick + spectral shake + reverb
   shoal_gran.maxpat  per-fish granulator, slice player, source menu
+  shoal_drums.maxpat drum voices for the MPK pad bank B (samples or synthesized)
 docs/                the pages listed above
 ```
 

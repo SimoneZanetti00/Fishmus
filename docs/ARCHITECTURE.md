@@ -97,6 +97,7 @@ Computed every frame over the whole flock, then smoothed with a one-pole filter 
 | Grain voices | each fish's x | `/gran/fish_x` (first 32 fish; `shoal_gran.maxpat` uses 16), one voice per fish, panned by x |
 | Grain rate and jitter | `fish_count`, agitation, predator, disorder | `/gran/density = 100 × fish_count`; `/gran/noise = clip(1.2·energy + 0.7·predator/3 + 0.2·(1 − coherence))` |
 | Mix, pads, transpose | MPK mini 3 | `/mix/*` when a knob moves, `/pad/*` when a pad is hit, `/mix/transpose` when a key is pressed |
+| Drums | MPK pad bank B | `/drum/<name> <velocity>` → `shoal_drums.maxpat`; the fish are not affected |
 
 Design rule: the flock drives a few expressive parameters; everything else in PLAUD stays in the performer's hands.
 
@@ -130,6 +131,8 @@ Rendering only reads the simulation; it never changes it.
 - Two views: **art** (no text, for recording) and **data** (with a HUD); H switches between them.
 
 **Classic look (`--classic`):** the original flat background, triangle fish and text HUD.
+
+**Drum layer (both looks):** short display-only reactions to bank-B hits, plus the BANK B label. It uses its own random generator, so the simulation's random stream (and the OSC output) is never touched.
 
 ## Design notes
 
