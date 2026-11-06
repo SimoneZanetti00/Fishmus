@@ -165,6 +165,13 @@ class OscSender:
         """
         self.client.send_message("/mix/transpose", int(semitones))
 
+    def send_drum(self, name: str, velocity: float) -> None:
+        """MPK pad bank B: one drum hit, sent when the pad is hit.
+
+          /drum/<name>  float 0..1 (velocity); names: kick snare hihat dirty slice openhat clap perc
+        """
+        self.client.send_message(f"/drum/{name}", float(velocity))
+
     def send_pad_kick(self) -> None:
         """Pad 1: one kick now.  /pad/kick  (no arguments)"""
         self.client.send_message("/pad/kick", [])

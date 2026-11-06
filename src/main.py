@@ -246,6 +246,11 @@ def main(argv: list[str] | None = None) -> None:
             elif 5 <= pad <= 8:
                 osc.send_pad_sample(pad - 4)
 
+        for name, velocity in midi_input.take_drums():  # MPK pad bank B: drum hits for Max, display-only visuals
+            osc.send_drum(name, velocity)
+            renderer.drum_hit(name, velocity, flock)
+        renderer.drums.bank_b = midi_input.last_bank == "B"
+
         transpose = midi_input.take_transpose()  # MPK keys: latched transpose for the grain source
         if transpose is not None:
             osc.send_transpose(transpose)

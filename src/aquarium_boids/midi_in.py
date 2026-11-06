@@ -51,6 +51,9 @@ class MidiControllerInput:
         self.joy_invert_y = joy_invert_y
         self._joy_raw = [64, 64]
         self._pending_transpose: int | None = None
+        self.drum_pads: dict[int, str] = {}  # note number (note-on, any channel) -> drum name (MPK bank B)
+        self._pending_drums: list[tuple[str, float]] = []
+        self.last_bank: str | None = None  # "A" or "B": bank of the last pad hit (the MPK sends no bank change)
         self._pending_pads: list[int] = []
         self.enabled = False
         self.device_id: int | None = None
@@ -99,6 +102,7 @@ class MidiControllerInput:
                 self.note_pads = profile.get("note_pads", {})
                 self.joystick_ccs = profile.get("joystick")
                 self.keys = profile.get("keys")
+                self.drum_pads = profile.get("drum_pads", {})
                 self.profile_name = key
                 return
         self.profile_name = "MIDIMIX (default mapping)"
@@ -107,6 +111,11 @@ class MidiControllerInput:
         """Pads (1..8) pressed since the last call, in order."""
         pads, self._pending_pads = self._pending_pads, []
         return pads
+
+    def take_drums(self) -> list[tuple[str, float]]:
+        """Drum hits (name, velocity 0..1) since the last call, in order."""
+        drums, self._pending_drums = self._pending_drums, []
+        return drums
 
     def take_transpose(self) -> int | None:
         """Transpose (semitones) from the last key pressed since the last call, or None."""
@@ -180,6 +189,7 @@ class MidiControllerInput:
                 pad = self.pc_pads.get(cc)  # data[1] is the program number
                 if pad is not None:
                     self._pending_pads.append(pad)
+                    self.last_bank = "A"
                     if self.debug:
                         print(f"[pad] {pad}  (program {cc}, channel {channel})")
                 elif self.debug:
@@ -193,8 +203,15 @@ class MidiControllerInput:
                 pad = self.note_pads.get(cc) if is_on else None  # data[1] is the note number
                 if pad is not None:
                     self._pending_pads.append(pad)
+                    self.last_bank = "A"
                     if self.debug:
                         print(f"[pad] {pad}  (note {cc}, channel {channel})")
+                elif is_on and cc in self.drum_pads:  # bank B: drum hit with velocity
+                    name, velocity = self.drum_pads[cc], clamp01(value / 127.0)
+                    self._pending_drums.append((name, velocity))
+                    self.last_bank = "B"
+                    if self.debug:
+                        print(f"[drum] {name} v={velocity:.2f}  (note {cc}, channel {channel})")
                 elif is_on and self.keys is not None and channel == self.keys[0] and self.keys[1] <= cc <= self.keys[2]:
                     self._pending_transpose = cc - self.keys[3]  # latched until the next key; note-off does nothing
                     if self.debug:

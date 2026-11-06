@@ -54,6 +54,8 @@ JOY_DEAD_ZONE = 8  # |value - 64| <= this on both axes = centre: no joystick foo
 JOY_MARGIN = 60.0  # world px kept free at the edges at full deflection
 JOY_SMOOTHING = 0.15  # per-frame glide of the joystick food point towards its target
 MIDI_KEYS_MPK = (1, 48, 72, 60)  # channel, lowest, highest, root: note-on -> transpose = note - root
+# Pad bank B (note-on 32..39, any channel; measured: channel 10, velocity-sensitive) -> drum hits /drum/<name>.
+DRUM_PADS_MPK = {32: "kick", 33: "snare", 34: "hihat", 35: "dirty", 36: "slice", 37: "openhat", 38: "clap", 39: "perc"}
 MIDI_PROFILES = {  # name substring -> what the controller adds to (or replaces in) the default MIDIMIX setup
     "MPK": {
         "cc": MIDI_CC_MAPPING_MPK,
@@ -61,6 +63,7 @@ MIDI_PROFILES = {  # name substring -> what the controller adds to (or replaces 
         "note_pads": MIDI_NOTE_PADS_MPK,
         "joystick": (JOY_CC_X_MPK, JOY_CC_Y_MPK),
         "keys": MIDI_KEYS_MPK,
+        "drum_pads": DRUM_PADS_MPK,
     },
 }
 PAD_PREDATOR_BURST_S = 0.7  # pad 2: predator at the centre for this long (< shoal_fx's 800 ms repeat: one kick)

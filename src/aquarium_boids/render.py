@@ -149,10 +149,14 @@ class ClassicRenderer:
     def __init__(self, font: pygame.font.Font):
         self.font = font
         self._world: pygame.Surface | None = None
+        self.drums = DrumLayer()
 
     def handle_key(self, key: int) -> bool:
         """Display keys; the classic look has none (H stays a no-op, as before)."""
         return False
+
+    def drum_hit(self, name: str, velocity: float, flock: list[Boid]) -> None:
+        self.drums.hit(name, velocity, flock)
 
     def draw(
         self,
@@ -166,6 +170,7 @@ class ClassicRenderer:
     ) -> None:
         if view.is_identity:
             self._draw_world(canvas, flock, attractor, repeller)
+            self.drums.draw(canvas, view, self.font)
             draw_hud(canvas, self.font, controls, descriptors)
             return
         if self._world is None or self._world.get_size() != view.world_size:
@@ -173,6 +178,7 @@ class ClassicRenderer:
         self._draw_world(self._world, flock, attractor, repeller)
         canvas.fill(BACKGROUND)
         pygame.transform.smoothscale(self._world, view.rect.size, canvas.subsurface(view.rect))
+        self.drums.draw(canvas, view, self.font)
         draw_hud(canvas, self.font, controls, descriptors, origin=view.rect.topleft)
 
     @staticmethod
@@ -587,6 +593,145 @@ class ParticleField:
         canvas.blits(blits, doreturn=False)
 
 
+# ---------------------------------------------------------------- MPK pad bank B: drum reactions (display only)
+# Each hit starts a short effect drawn through the view on top of everything else. Positions are copied at the
+# hit, so effects never follow (or touch) the fish. Own RNG: the global random stream is never used here.
+DRUM_SEED = 23
+DRUM_FRAMES = {"kick": 45, "snare": 16, "hihat": 14, "dirty": 9, "slice": 48, "openhat": 30, "clap": 10, "perc": 12}
+KICK_RING_COLOR = (255, 120, 40)
+SNARE_COLOR = (255, 225, 190)
+SPARK_COLOR = (255, 248, 210)
+BUBBLE_COLOR = (90, 200, 255)
+OPENHAT_COLOR = (190, 215, 255)
+CLAP_COLOR = (255, 255, 255)
+PERC_COLOR = (255, 200, 90)
+BANK_COLOR = (255, 170, 40)
+
+
+def _faded(color: tuple[int, int, int], level: float) -> tuple[int, int, int]:
+    level = max(0.0, min(1.0, level))
+    return tuple(int(c * level) for c in color)
+
+
+class DrumLayer:
+    """Short display-only reactions to drum hits (kick ring, snare shock, hi-hat sparks, dirty glitch, slice
+    bubbles, open-hat halos, clap flash, perc ticks) and the BANK B indicator."""
+
+    def __init__(self) -> None:
+        self.frame = 0
+        self.rng = random.Random(DRUM_SEED)
+        self.effects: list[dict] = []
+        self.bank_b = False
+        self._label: pygame.Surface | None = None
+
+    def hit(self, name: str, velocity: float, flock: list[Boid]) -> None:
+        if name not in DRUM_FRAMES:
+            return
+        rng = self.rng
+        v = max(0.0, min(1.0, velocity))
+        positions = [Vector2(boid.position) for boid in flock]
+        effect: dict = {"name": name, "birth": self.frame, "v": v}
+        if name == "snare":
+            effect["side"] = rng.choice((-1, 1))
+            effect["fish"] = rng.sample(positions, k=len(positions) // 3) if positions else []
+        elif name == "hihat":
+            fastest = sorted(flock, key=lambda b: b.velocity.length_squared(), reverse=True)[:8]
+            effect["sparks"] = [(Vector2(b.position), Vector2(1, 0).rotate(rng.uniform(0, 360)) * rng.uniform(1.5, 4.0))
+                                for b in fastest for _ in range(4)]
+        elif name == "dirty":
+            effect["bands"] = [(rng.uniform(0.0, 0.95), rng.uniform(0.02, 0.08), rng.choice((-1, 1)) * rng.uniform(10, 40))
+                               for _ in range(5)]
+            effect["shake"] = (rng.choice((-1, 1)), rng.choice((-1, 1)))
+        elif name == "slice":
+            chosen = rng.sample(positions, k=min(10, len(positions))) if positions else []
+            effect["bubbles"] = [(p, rng.uniform(-0.4, 0.4), rng.uniform(0.8, 1.6)) for p in chosen]
+        elif name == "openhat":
+            effect["fish"] = rng.sample(positions, k=min(40, len(positions))) if positions else []
+        elif name == "perc":
+            chosen = rng.sample(positions, k=min(6, len(positions))) if positions else []
+            effect["ticks"] = [(p, rng.uniform(0, 360)) for p in chosen]
+        self.effects.append(effect)
+
+    def draw(self, canvas: pygame.Surface, view: View, font: pygame.font.Font) -> None:
+        self.frame += 1
+        if not self.effects and not self.bank_b:
+            return
+        scale = view.scale
+        ox, oy = view.rect.topleft
+        ww, wh = view.world_size
+
+        def to_canvas(p: Vector2) -> tuple[int, int]:
+            return int(ox + p.x * scale), int(oy + p.y * scale)
+
+        alive, glitches = [], []
+        for e in self.effects:
+            age = self.frame - e["birth"]
+            t = age / DRUM_FRAMES[e["name"]]
+            if t >= 1.0:
+                continue
+            alive.append(e)
+            v, name, fade = e["v"], e["name"], 1.0 - t
+            if name == "kick":
+                cx, cy = int(ox + ww * 0.5 * scale), int(oy + wh * 0.5 * scale)
+                reach = min(ww, wh) * 0.55 * (0.5 + 0.5 * v) * scale
+                for delay in (0.0, 0.15):
+                    tt = (t - delay) / (1.0 - delay)
+                    if 0.0 <= tt < 1.0:
+                        r = int(20 * scale + reach * (1.0 - (1.0 - tt) ** 2))
+                        color = _faded(KICK_RING_COLOR, (1.0 - tt) * (0.5 + 0.5 * v))
+                        for dr in (0, 1, 2):
+                            pygame.gfxdraw.aacircle(canvas, cx, cy, r + dr, color)
+            elif name == "snare":
+                side = e["side"]
+                x = ww * (0.5 - 0.6 * side * (t - 0.5))
+                color = _faded(SNARE_COLOR, fade * (0.5 + 0.5 * v))
+                pygame.draw.line(canvas, color, to_canvas(Vector2(x, 0)), to_canvas(Vector2(x, wh)), max(1, int(3 * scale)))
+                length = 40 * fade * (0.4 + 0.6 * v)
+                for p in e["fish"]:
+                    pygame.draw.line(canvas, color, to_canvas(p), to_canvas(p + Vector2(side * length, 0)), 1)
+            elif name == "hihat":
+                color = _faded(SPARK_COLOR, fade * (0.5 + 0.5 * v))
+                for p, d in e["sparks"]:
+                    pygame.draw.circle(canvas, color, to_canvas(p + d * age), max(1, int(2 * scale)))
+            elif name == "dirty":
+                glitches.append(e)
+            elif name == "slice":
+                color = _faded(BUBBLE_COLOR, fade * (0.5 + 0.5 * v))
+                for p, drift, rise in e["bubbles"]:
+                    q = to_canvas(p + Vector2(drift * age, -rise * age))
+                    pygame.gfxdraw.aacircle(canvas, q[0], q[1], max(2, int((3 + 6 * t) * scale)), color)
+            elif name == "openhat":
+                color = _faded(OPENHAT_COLOR, fade * 0.6 * (0.5 + 0.5 * v))
+                r = max(2, int((6 + 16 * t) * scale))
+                for p in e["fish"]:
+                    q = to_canvas(p)
+                    pygame.gfxdraw.aacircle(canvas, q[0], q[1], r, color)
+            elif name == "clap":
+                color = _faded(CLAP_COLOR, fade * (0.5 + 0.5 * v))
+                pygame.draw.rect(canvas, color, view.rect, max(1, int(8 * fade * scale)))
+            elif name == "perc":
+                color = _faded(PERC_COLOR, fade * (0.5 + 0.5 * v))
+                for p, angle in e["ticks"]:
+                    for k in range(6):
+                        d = Vector2(1, 0).rotate(angle + 60 * k)
+                        pygame.draw.line(canvas, color, to_canvas(p + d * 8), to_canvas(p + d * (8 + 10 * fade)), 1)
+        self.effects = alive
+        for e in glitches:  # last, so the glitch also tears the other effects
+            fade = 1.0 - (self.frame - e["birth"]) / DRUM_FRAMES["dirty"]
+            amount = fade * (0.4 + 0.6 * e["v"])
+            rect = view.rect
+            for y0, h, dx in e["bands"]:
+                band = pygame.Rect(rect.x, rect.y + int(y0 * rect.h), rect.w, max(1, int(h * rect.h))).clip(rect)
+                if band.h > 0:
+                    canvas.blit(canvas.subsurface(band).copy(), (band.x + int(dx * amount * scale), band.y))
+            sx, sy = e["shake"]
+            canvas.scroll(int(sx * 6 * amount * scale), int(sy * 4 * amount * scale))
+        if self.bank_b:
+            if self._label is None:
+                self._label = font.render("BANK B", True, BANK_COLOR)
+            canvas.blit(self._label, (view.rect.right - self._label.get_width() - 10, view.rect.y + 8))
+
+
 class ThermalRenderer:
     """Dark "thermal" look, drawn directly at canvas resolution through the view.
 
@@ -613,6 +758,7 @@ class ThermalRenderer:
         self._glow_blob_cache: dict[float, GlowBlobs] = {}
         self._glow_buffers: GlowBuffers | None = None
         self._events = EventLayer()
+        self.drums = DrumLayer()
         # Persistent picture of the world area: faded each frame instead of cleared (trails).
         # Only fish go in here; rings and HUD are drawn on the canvas so they never smear.
         self._scene: pygame.Surface | None = None
@@ -634,6 +780,9 @@ class ThermalRenderer:
             self.particles = not self.particles
             return True
         return False
+
+    def drum_hit(self, name: str, velocity: float, flock: list[Boid]) -> None:
+        self.drums.hit(name, velocity, flock)
 
     def draw(
         self,
@@ -700,6 +849,8 @@ class ThermalRenderer:
                 canvas.blit(buffers.output, view.rect.topleft, special_flags=pygame.BLEND_RGB_ADD)
         with _stage("thermal.events"):
             self._events.draw(canvas, view, attractor, repeller, controls)
+        with _stage("thermal.drums"):
+            self.drums.draw(canvas, view, self.font)
         canvas.set_clip(None)
         if self.mode == "data":
             draw_hud(canvas, self.font, controls, descriptors, origin=view.rect.topleft)
